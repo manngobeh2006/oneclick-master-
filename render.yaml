@@ -10,10 +10,7 @@ services:
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: oneclick-master-api
-          property: url
+        value: https://oneclick-master-api.onrender.com
     
   # Backend API
   - type: web
@@ -30,12 +27,6 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: oneclick-master-frontend
-          property: url
+        value: https://oneclick-master-frontend.onrender.com
       - key: CORS_ORIGINS
-        fromService:
-          type: web
-          name: oneclick-master-frontend
-          property: url
+        value: https://oneclick-master-frontend.onrender.com
