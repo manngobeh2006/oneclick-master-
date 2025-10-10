@@ -7,8 +7,8 @@ build:
       - yum install -y ffmpeg
       # Install Python dependencies
       - cd backend && pip install -r requirements.txt
-      # Build frontend
-      - cd frontend && npm install && npm run build
+      # Build frontend with correct API URL
+      - cd frontend && VITE_API_URL=https://api.one-clickmaster.com npm install && npm run build
 run:
   runtime-version: 3.11
   command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
@@ -16,4 +16,6 @@ run:
     port: 8000
   env:
     - name: FRONTEND_URL
-      value: https://your-app.us-east-1.awsapprunner.com
+      value: https://one-clickmaster.com
+    - name: CORS_ORIGINS
+      value: https://one-clickmaster.com

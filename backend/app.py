@@ -68,77 +68,37 @@ def run_ffmpeg(args: list[str]) -> None:
 
 def make_preview(input_path: Path, out_path: Path) -> None:
     """
-    Full-length preview at 128 kbps with professional mastering chain and subtle watermark.
-    Includes: noise reduction, EQ, compression, limiting, and stereo enhancement.
+    Ultra-simple preview with watermark - fast processing.
     """
     run_ffmpeg([
         "ffmpeg", "-y",
         "-i", str(input_path),
-        "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000",
+        "-f", "lavfi", "-i", "sine=frequency=880:duration=0.5",
         "-filter_complex",
-        "[0:a]"
-        "highpass=f=20,"
-        "lowpass=f=20000,"
-        "equalizer=f=60:t=h:w=100:g=-1,"
-        "equalizer=f=200:t=h:w=200:g=0.5,"
-        "equalizer=f=1000:t=h:w=500:g=0.2,"
-        "equalizer=f=3000:t=h:w=1000:g=1,"
-        "equalizer=f=8000:t=h:w=2000:g=0.8,"
-        "acompressor=threshold=-18dB:ratio=2.5:attack=3:release=100:makeup=2,"
-        "acompressor=threshold=-12dB:ratio=4:attack=1:release=50:makeup=1,"
-        "alimiter=level_in=1:level_out=0.95:limit=0.95,"
-        "loudnorm=I=-16:TP=-1.5:LRA=11,"
-        "extrastereo=m=1.2[aud];"
-        "[1:a]volume=-25dB[beep];"
-        "[aud][beep]amix=inputs=2:normalize=0[out]",
+        "[0:a]volume=0.8,highpass=f=50[aud];"
+        "[1:a]volume=0.1[beep];"
+        "[aud][beep]amix=inputs=2:duration=first[out]",
         "-map", "[out]",
         "-ac", "2",
         "-ar", "44100",
         "-b:a", "128k",
-        "-shortest",
+        "-t", "30",  # Limit to 30 seconds for preview
         str(out_path)
     ])
 
 
+
 def make_master(input_path: Path, out_path: Path) -> None:
     """
-    Professional mastering chain at 320 kbps with advanced processing.
-    Includes: noise reduction, multi-band EQ, multi-stage compression, 
-    stereo enhancement, harmonic enhancement, and professional limiting.
+    Fast, simple master - enhanced audio quality.
     """
     run_ffmpeg([
         "ffmpeg", "-y",
         "-i", str(input_path),
         "-filter:a",
-        # High-pass filter to remove rumble
-        "highpass=f=18,"
-        # Low-pass filter to remove harsh high frequencies
-        "lowpass=f=20000,"
-        # Gentle noise gate
-        "agate=threshold=0.001:ratio=2:attack=20:release=250,"
-        # Multi-band EQ for professional sound
-        "equalizer=f=60:t=h:w=80:g=-0.8,"
-        "equalizer=f=120:t=h:w=120:g=-0.3,"
-        "equalizer=f=250:t=h:w=200:g=0.5,"
-        "equalizer=f=500:t=h:w=300:g=0.3,"
-        "equalizer=f=1000:t=h:w=500:g=0.4,"
-        "equalizer=f=2000:t=h:w=800:g=0.6,"
-        "equalizer=f=4000:t=h:w=1200:g=1.2,"
-        "equalizer=f=8000:t=h:w=2000:g=0.8,"
-        "equalizer=f=12000:t=h:w=3000:g=0.4,"
-        # Multi-stage compression for punch and clarity
-        "acompressor=threshold=-24dB:ratio=2:attack=5:release=150:makeup=1.5,"
-        "acompressor=threshold=-16dB:ratio=3:attack=2:release=80:makeup=2,"
-        "acompressor=threshold=-10dB:ratio=6:attack=0.5:release=40:makeup=1.5,"
-        # Stereo enhancement
-        "extrastereo=m=1.5,"
-        # Subtle saturation for warmth
-        "acompressor=threshold=-6dB:ratio=20:attack=0.1:release=10:makeup=0.5,"
-        # Final limiting and loudness normalization
-        "alimiter=level_in=1:level_out=0.98:limit=0.98:attack=1:release=5,"
-        "loudnorm=I=-14:TP=-1:LRA=9",
+        "volume=1.2,highpass=f=30,acompressor=threshold=-16dB:ratio=2.5:makeup=3",
         "-ac", "2",
-        "-ar", "48000",
+        "-ar", "44100",
         "-b:a", "320k",
         str(out_path)
     ])
@@ -148,6 +108,28 @@ def make_master(input_path: Path, out_path: Path) -> None:
 @app.get("/health")
 def health():
     return {"ok": True, "dev_mode": DEV_MODE}
+
+
+@app.get("/ffmpeg-test")
+def ffmpeg_test():
+    """Test if FFmpeg is available and working"""
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-version"], 
+            capture_output=True, 
+            text=True, 
+            timeout=10
+        )
+        return {
+            "ffmpeg_available": result.returncode == 0,
+            "version_info": result.stdout.split('\n')[0] if result.returncode == 0 else None,
+            "error": result.stderr if result.returncode != 0 else None
+        }
+    except Exception as e:
+        return {
+            "ffmpeg_available": False,
+            "error": str(e)
+        }
 
 
 @app.post("/preview")
