@@ -26,10 +26,6 @@ export default defineConfig({
         }
       }
     }
-  },
-  define: {
-    // Make API URL configurable for production
-    'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || '/api')
   }
 });
 

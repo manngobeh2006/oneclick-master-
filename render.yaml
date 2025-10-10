@@ -9,6 +9,8 @@ services:
       npm run build
     staticPublishPath: frontend/dist
     envVars:
+      - key: NODE_VERSION
+        value: 18
       - key: VITE_API_URL
         value: https://audiomaster-pro-2024-api.onrender.com
     
