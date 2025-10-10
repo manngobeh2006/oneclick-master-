@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   uploadForPreview,
   createCheckout,
@@ -8,44 +8,19 @@ import {
 
 type Plan = "one_time" | "subscription";
 
-function ProgressBar({ value, label }: { value: number; label?: string }) {
-  if (!value || value <= 0 || value > 100) return null;
-  return (
-    <div style={{ width: "100%", marginTop: 10 }}>
-      <div
-        style={{
-          height: 8,
-          background: "#ffffff22",
-          borderRadius: 8,
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            height: "100%",
-            width: `${Math.min(100, Math.max(1, value))}%`,
-            background: "#6ea8fe",
-            transition: "width .1s linear",
-          }}
-        />
-      </div>
-      <div style={{ marginTop: 6, fontSize: 12, color: "#9fb0cc" }}>
-        {label ?? "Progress"}: {Math.round(value)}%
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   // Core state
   const [file, setFile] = useState<File | null>(null);
   const [jobId, setJobId] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [downloadUrl, setDownloadUrl] = useState("");
+  const [originalAudioUrl, setOriginalAudioUrl] = useState("");
 
   // UI state
-  const [status, setStatus] = useState("Idle");
+  const [status, setStatus] = useState("Ready to master your audio");
   const [error, setError] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   // Billing state
   const [plan, setPlan] = useState<Plan>("one_time");
@@ -55,6 +30,10 @@ export default function App() {
   // Progress state
   const [uploadPct, setUploadPct] = useState(0);
   const [processPct, setProcessPct] = useState(0);
+
+  // Audio refs for comparison
+  const originalAudioRef = useRef<HTMLAudioElement>(null);
+  const masteredAudioRef = useRef<HTMLAudioElement>(null);
 
   // Capture session_id & job_id after Stripe redirect
   useEffect(() => {
@@ -78,18 +57,28 @@ export default function App() {
   async function startPreview() {
     if (!file) return;
     setError("");
-    setStatus("Uploading & generating preview…");
+    setStatus("Processing your audio...");
+    setIsProcessing(true);
     setUploadPct(0);
+    setShowComparison(false);
+    
+    // Create original audio URL for comparison
+    const originalUrl = URL.createObjectURL(file);
+    setOriginalAudioUrl(originalUrl);
+    
     try {
       // upload with progress
       const res = await uploadForPreview(file, setUploadPct);
       setJobId(res.job_id);
       // IMPORTANT: prefix with /api so the browser hits Vite proxy → FastAPI
       setPreviewUrl(`/api${res.preview_url}`);
-      setStatus("Preview ready. Listen below.");
+      setStatus("✨ Your mastered preview is ready!");
+      setShowComparison(true);
     } catch (e: any) {
-      setError(e?.message || "Preview failed.");
-      setStatus("Idle");
+      setError(e?.message || "Processing failed. Please try again.");
+      setStatus("Ready to master your audio");
+    } finally {
+      setIsProcessing(false);
     }
   }
 
@@ -140,134 +129,237 @@ export default function App() {
     }
   }
 
+  // Audio comparison functions
+  function playOriginal() {
+    if (masteredAudioRef.current) masteredAudioRef.current.pause();
+    if (originalAudioRef.current) {
+      originalAudioRef.current.currentTime = 0;
+      originalAudioRef.current.play();
+    }
+  }
+
+  function playMastered() {
+    if (originalAudioRef.current) originalAudioRef.current.pause();
+    if (masteredAudioRef.current) {
+      masteredAudioRef.current.currentTime = 0;
+      masteredAudioRef.current.play();
+    }
+  }
+
   return (
     <div className="app">
-      <div className="card">
-        {/* Header */}
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <div>
-            <h1>OneClick Master</h1>
-            <div className="sub">
-              AI audio cleanup & mastering — full-length preview, pay to download
-            </div>
-          </div>
-          <div className="badge">
-            <span>Status:</span>
-            <strong>{status}</strong>
+      {/* Hero Section */}
+      <div className="hero">
+        <div className="hero-content">
+          <h1 className="hero-title">OneClick Master</h1>
+          <p className="hero-subtitle">
+            Professional AI audio mastering in seconds. Upload, preview, and download your polished tracks.
+          </p>
+          <div className="status-badge">
+            <span className="status-dot" style={{ backgroundColor: isProcessing ? '#f59e0b' : (previewUrl ? '#10b981' : '#6b7280') }}></span>
+            {status}
           </div>
         </div>
+      </div>
 
-        <hr className="sep" />
+      <div className="main-content">
+        <div className="upload-section">
+          <h2>Upload Your Audio</h2>
 
-        {/* File + Start */}
-        <div className="row">
-          <label className="input">
+          <div className="upload-area" onClick={() => document.getElementById('file-input')?.click()}>
             <input
+              id="file-input"
               type="file"
-              accept="audio/*"
+              accept="audio/*,.mp3,.wav,.m4a,.aiff,.flac"
               style={{ display: "none" }}
               onChange={(e) => {
-                setFile(e.target.files?.[0] || null);
-                setError("");
-                setPreviewUrl("");
-                setDownloadUrl("");
-                setUploadPct(0);
-                setProcessPct(0);
+                const selectedFile = e.target.files?.[0];
+                if (selectedFile) {
+                  setFile(selectedFile);
+                  setError("");
+                  setPreviewUrl("");
+                  setDownloadUrl("");
+                  setUploadPct(0);
+                  setProcessPct(0);
+                  setShowComparison(false);
+                }
               }}
             />
-            {file ? `Selected: ${file.name}` : "Choose audio file (MP3/WAV/M4A/AIFF)"}
-          </label>
+            <div className="upload-icon">🎵</div>
+            <div className="upload-text">
+              {file ? (
+                <>
+                  <div className="file-selected">✓ {file.name}</div>
+                  <div className="file-info">{(file.size / 1024 / 1024).toFixed(1)} MB</div>
+                </>
+              ) : (
+                <>
+                  <div>Drop your audio file here or click to browse</div>
+                  <div className="supported-formats">MP3, WAV, M4A, AIFF, FLAC supported</div>
+                </>
+              )}
+            </div>
+          </div>
 
-          <button className="btn" onClick={startPreview} disabled={!file}>
-            {!file ? "Select a file to start" : "Start (Generate Preview)"}
+          <button 
+            className={`start-btn ${!file || isProcessing ? 'disabled' : ''}`} 
+            onClick={startPreview} 
+            disabled={!file || isProcessing}
+          >
+            {isProcessing ? (
+              <>
+                <span className="spinner"></span>
+                Processing...
+              </>
+            ) : (
+              !file ? "Select a file to start" : "🚀 Start Mastering"
+            )}
           </button>
-
-          <a className="btn secondary" href="/api/health" target="_blank" rel="noreferrer">
-            API Health
-          </a>
         </div>
 
         {/* Upload progress */}
-        <ProgressBar value={uploadPct} label="Upload" />
+        {uploadPct > 0 && (
+          <div className="progress-bar">
+            <div className="progress-track">
+              <div className="progress-fill" style={{ width: `${uploadPct}%` }} />
+            </div>
+            <div className="progress-label">Upload: {Math.round(uploadPct)}%</div>
+          </div>
+        )}
 
         {/* Error line */}
         {error && (
-          <div style={{ marginTop: 10 }} className="error">
+          <div className="error-message">
+            <span className="error-icon">⚠️</span>
             {error}
           </div>
         )}
 
-        {/* Preview player */}
-        {previewUrl && (
-          <>
-            <hr className="sep" />
-            <div className="row">
-              <span className="pill">Preview (watermarked, stream only)</span>
-            </div>
-            <div className="audio-wrap" style={{ marginTop: 10 }}>
-              <audio controls src={previewUrl} style={{ width: "100%" }} />
-              <div className="small" style={{ marginTop: 6 }}>
-                If it doesn’t play, the link may have expired (presigned). Click{" "}
-                <strong>Start</strong> again to refresh.
+        {/* Before/After Comparison */}
+        {showComparison && originalAudioUrl && previewUrl && (
+          <div className="comparison-section">
+            <h2>Before & After Comparison</h2>
+            <div className="audio-comparison">
+              <div className="audio-player-container">
+                <h3>Original</h3>
+                <div className="player-wrapper">
+                  <audio ref={originalAudioRef} src={originalAudioUrl} controls />
+                  <button className="play-btn original" onClick={playOriginal}>
+                    ▶️ Play Original
+                  </button>
+                </div>
+                <div className="audio-info">Raw, unprocessed audio</div>
+              </div>
+              <div className="vs-divider">
+                <span>VS</span>
+              </div>
+              <div className="audio-player-container">
+                <h3>Mastered ✨</h3>
+                <div className="player-wrapper">
+                  <audio ref={masteredAudioRef} src={previewUrl} controls />
+                  <button className="play-btn mastered" onClick={playMastered}>
+                    ▶️ Play Mastered
+                  </button>
+                </div>
+                <div className="audio-info">Professional mastered preview</div>
               </div>
             </div>
-          </>
+            <div className="preview-notice">
+              <span>📝</span> This is a watermarked preview. Purchase to download the full-quality version.
+            </div>
+          </div>
         )}
 
-        <hr className="sep" />
+        {/* Pricing Section */}
+        {previewUrl && (
+          <div className="pricing-section">
+            <h2>Choose Your Plan</h2>
+            <div className="pricing-cards">
+              <div className={`pricing-card ${plan === "one_time" ? "selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="plan"
+                  value="one_time"
+                  checked={plan === "one_time"}
+                  onChange={() => setPlan("one_time")}
+                  id="one-time"
+                />
+                <label htmlFor="one-time">
+                  <div className="plan-header">
+                    <h3>Single Track</h3>
+                    <div className="price">$4.99</div>
+                  </div>
+                  <ul className="plan-features">
+                    <li>✓ One professional master</li>
+                    <li>✓ High-quality MP3 download</li>
+                    <li>✓ AI-powered processing</li>
+                    <li>✓ Instant download</li>
+                  </ul>
+                </label>
+              </div>
+              
+              <div className={`pricing-card ${plan === "subscription" ? "selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="plan"
+                  value="subscription"
+                  checked={plan === "subscription"}
+                  onChange={() => setPlan("subscription")}
+                  id="subscription"
+                />
+                <label htmlFor="subscription">
+                  <div className="plan-header">
+                    <h3>Pro Monthly</h3>
+                    <div className="price">$19.99<span>/mo</span></div>
+                  </div>
+                  <ul className="plan-features">
+                    <li>✓ Unlimited masters</li>
+                    <li>✓ High-quality downloads</li>
+                    <li>✓ Advanced AI processing</li>
+                    <li>✓ Priority support</li>
+                  </ul>
+                  {plan === "subscription" && (
+                    <input
+                      type="email"
+                      className="email-input"
+                      placeholder="Enter your email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  )}
+                </label>
+              </div>
+            </div>
 
-        {/* Payment plan */}
-        <div className="row">
-          <label className="radio">
-            <input
-              type="radio"
-              name="plan"
-              value="one_time"
-              checked={plan === "one_time"}
-              onChange={() => setPlan("one_time")}
-            />
-            One-time export
-          </label>
-          <label className="radio">
-            <input
-              type="radio"
-              name="plan"
-              value="subscription"
-              checked={plan === "subscription"}
-              onChange={() => setPlan("subscription")}
-            />
-            Monthly subscription
-          </label>
-          {plan === "subscription" && (
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          )}
-        </div>
-
-        {/* Pay / Process */}
-        <div className="row" style={{ marginTop: 10 }}>
-          <button
-            className="btn"
-            onClick={onCheckout}
-            disabled={!jobId || !((plan === "one_time") || (plan === "subscription" && email.includes("@")))}
-          >
-            Pay
-          </button>
-          <button
-            className="btn secondary"
-            onClick={onProcessFull}
-            disabled={!file || !jobId}
-          >
-            Process Full (after payment)
-          </button>
-        </div>
+            <div className="payment-actions">
+              <button
+                className="checkout-btn"
+                onClick={onCheckout}
+                disabled={!jobId || !canPay}
+              >
+                💳 {plan === "one_time" ? "Buy Single Track" : "Start Subscription"}
+              </button>
+              <button
+                className="process-btn"
+                onClick={onProcessFull}
+                disabled={!file || !jobId}
+              >
+                🎵 Process Full Quality
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Processing progress */}
-        <ProgressBar value={processPct} label="Uploading for full export" />
+        {processPct > 0 && (
+          <div className="progress-bar">
+            <div className="progress-track">
+              <div className="progress-fill" style={{ width: `${processPct}%` }} />
+            </div>
+            <div className="progress-label">Processing: {Math.round(processPct)}%</div>
+          </div>
+        )}
 
         {/* Payment badge */}
         {sessionId && (
@@ -276,18 +368,31 @@ export default function App() {
           </div>
         )}
 
-        {/* Download link */}
+        {/* Download Section */}
         {downloadUrl && (
-          <>
-            <hr className="sep" />
-            <div className="row">
-              <span className="pill" style={{ background: "#1f2b46" }}>
-                Your mastered file
-              </span>
-              <a className="btn" href={downloadUrl}>Download</a>
+          <div className="download-section">
+            <div className="success-message">
+              <span className="success-icon">🎉</span>
+              <h2>Your master is ready!</h2>
+              <p>Professional quality, ready to share with the world.</p>
             </div>
-          </>
+            <a className="download-btn" href={downloadUrl}>
+              <span>⬇️</span>
+              Download Your Mastered Track
+            </a>
+            <div className="download-info">
+              High-quality 320kbps MP3 • Professional mastering • Ready for streaming
+            </div>
+          </div>
         )}
+        
+        {/* Footer */}
+        <div className="footer">
+          <p>Powered by AI • Professional Results • Instant Processing</p>
+          <a href="/api/health" target="_blank" rel="noreferrer" className="health-link">
+            API Status
+          </a>
+        </div>
       </div>
     </div>
   );
