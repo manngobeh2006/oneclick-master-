@@ -1,7 +1,7 @@
 services:
   # Frontend (Static Site)
   - type: web
-    name: oneclick-master-frontend
+    name: audiomaster-pro-2024-frontend
     env: static
     buildCommand: |
       cd frontend
@@ -10,11 +10,11 @@ services:
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
-        value: https://oneclick-master-api.onrender.com
+        value: https://audiomaster-pro-2024-api.onrender.com
     
   # Backend API
   - type: web
-    name: oneclick-master-api
+    name: audiomaster-pro-2024-api
     env: python
     plan: free
     buildCommand: |
@@ -27,6 +27,6 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: FRONTEND_URL
-        value: https://oneclick-master-frontend.onrender.com
+        value: https://audiomaster-pro-2024-frontend.onrender.com
       - key: CORS_ORIGINS
-        value: https://oneclick-master-frontend.onrender.com
+        value: https://audiomaster-pro-2024-frontend.onrender.com
