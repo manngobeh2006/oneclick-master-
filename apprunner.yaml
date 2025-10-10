@@ -1,0 +1,19 @@
+version: 1.0
+runtime: python3
+build:
+  commands:
+    build:
+      # Install system dependencies
+      - yum install -y ffmpeg
+      # Install Python dependencies
+      - cd backend && pip install -r requirements.txt
+      # Build frontend
+      - cd frontend && npm install && npm run build
+run:
+  runtime-version: 3.11
+  command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
+  network:
+    port: 8000
+  env:
+    - name: FRONTEND_URL
+      value: https://your-app.us-east-1.awsapprunner.com

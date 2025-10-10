@@ -1,0 +1,32 @@
+services:
+  # Frontend (Static Site)
+  - type: web
+    name: oneclick-master-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    
+  # Backend API
+  - type: web
+    name: oneclick-master-api
+    env: python
+    plan: free
+    buildCommand: |
+      apt-get update
+      apt-get install -y ffmpeg
+      cd backend
+      pip install -r requirements.txt
+    startCommand: cd backend && uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: oneclick-master-frontend
+          property: url
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: oneclick-master-frontend
+          property: url

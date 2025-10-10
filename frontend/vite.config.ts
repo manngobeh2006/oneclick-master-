@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// Proxy any request that starts with /api to the FastAPI container named "api"
+// Configuration for both development and production
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -14,6 +14,22 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, "")
       }
     }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom']
+        }
+      }
+    }
+  },
+  define: {
+    // Make API URL configurable for production
+    'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || '/api')
   }
 });
 
