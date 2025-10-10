@@ -2,7 +2,8 @@
 export type ProgressFn = (percent: number) => void;
 
 // API base URL - works in both development and production
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+const API_BASE = import.meta.env.VITE_API_URL || 
+  (import.meta.env.DEV ? "/api" : "https://audiomaster-pro-2024-api.onrender.com");
 
 function postFormXHR<T>(path: string, form: FormData, onProgress?: ProgressFn): Promise<T> {
   return new Promise((resolve, reject) => {
