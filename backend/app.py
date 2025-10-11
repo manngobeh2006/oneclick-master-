@@ -51,6 +51,7 @@ app.add_middleware(
 app.mount("/files", StaticFiles(directory=str(DATA_DIR), html=False), name="files")
 
 
+
 # ----------- Helpers -----------
 SAFE_CHARS = re.compile(r"[^a-zA-Z0-9._-]+")
 

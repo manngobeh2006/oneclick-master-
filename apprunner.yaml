@@ -1,21 +1,24 @@
 version: 1.0
-runtime: python3
+runtime: docker
 build:
   commands:
     build:
-      # Install system dependencies
-      - yum install -y ffmpeg
-      # Install Python dependencies
-      - cd backend && pip install -r requirements.txt
-      # Build frontend with correct API URL
-      - cd frontend && VITE_API_URL=https://api.one-clickmaster.com npm install && npm run build
+      - echo "Building OneClick Master API with Docker"
 run:
-  runtime-version: 3.11
-  command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
+  runtime-version: latest
+  command: uvicorn app:app --host 0.0.0.0 --port 8000
   network:
     port: 8000
+    env_variables:
+      PYTHONUNBUFFERED: 1
   env:
     - name: FRONTEND_URL
       value: https://one-clickmaster.com
     - name: CORS_ORIGINS
       value: https://one-clickmaster.com
+    - name: AWS_REGION
+      value: us-east-1
+    - name: S3_BUCKET_UPLOADS
+      value: one-clickmaster.com-uploads
+    - name: S3_BUCKET_OUTPUTS
+      value: one-clickmaster.com-outputs
