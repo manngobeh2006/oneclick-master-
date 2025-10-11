@@ -1,9 +1,12 @@
 version: 1.0
-runtime: python311
+runtime: python3
 
 build:
   commands:
     build:
+      - echo "Installing system dependencies"
+      - apt-get update
+      - apt-get install -y ffmpeg
       - echo "Installing Python dependencies"
       - pip install --upgrade pip
       - pip install -r backend/requirements.txt
@@ -14,15 +17,10 @@ build:
       value: "1"
 
 run:
-  # If you truly need to pin, you can add: runtime-version: 3.11.13
-  pre-run:
-    # Prefer dnf/yum on Amazon Linux; apt-get is not available
-    - dnf -y install ffmpeg || yum -y install ffmpeg || true
+  runtime-version: 3.11
   command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
   network:
     port: 8000
-    # Optional: also export the port under a custom env name
-    # env: APP_PORT
   env:
     - name: FRONTEND_URL
       value: "https://one-clickmaster.com"
