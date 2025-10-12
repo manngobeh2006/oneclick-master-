@@ -7,6 +7,8 @@ build:
       - python -V
 
 run:
-  command: python -c "import time; print('healthy'); time.sleep(3600)"
+  runtime-version: "3.11.13"
+  command: python -c "import time; print('OK'); time.sleep(3600)"
   network:
     port: 8000
+
