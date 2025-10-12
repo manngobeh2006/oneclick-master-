@@ -17,11 +17,9 @@ build:
       value: "1"
 
 run:
-  # Remove this (let App Runner manage patches), OR set a full patch like 3.11.13
-  # runtime-version: 3.11.13
+  runtime-version: 3.11.13
 
   pre-run:
-    # Always get a working ffmpeg (static build)
     - dnf -y install curl tar xz || yum -y install curl tar xz
     - curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o /tmp/ffmpeg.tar.xz
     - mkdir -p /opt/ffmpeg
@@ -30,15 +28,7 @@ run:
     - ln -sf /opt/ffmpeg/ffprobe /usr/local/bin/ffprobe
     - ffmpeg -version
 
-  command: >
-    bash -lc '
-      set -e;
-      cd backend;
-      echo "PORT=${PORT:-8000}";
-      which uvicorn || { echo "uvicorn not found"; exit 1; }
-      which ffmpeg  || { echo "ffmpeg not found";  exit 1; }
-      uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}
-    '
+  command: cd backend && uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}
 
   network:
     port: 8000
@@ -56,4 +46,3 @@ run:
       value: "one-clickmaster.com-outputs"
     - name: PYTHONUNBUFFERED
       value: "1"
-
