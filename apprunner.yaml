@@ -1,19 +1,28 @@
 version: 1.0
-runtime: python311
+runtime: python3
 
 build:
   commands:
     build:
-      - pip3 install -r backend/requirements.txt
+      - apt-get update && apt-get install -y ffmpeg
+      - pip install -r backend/requirements.txt
+      - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
 
 run:
-  runtime-version: 3.11
-  pre-run:
-    - apt-get update && apt-get install -y ffmpeg
-    - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
-  command: cd backend && python3 -m uvicorn app:app --host 0.0.0.0 --port 8000
+  runtime-version: 3.8
+  command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
   network:
     port: 8000
   env:
     - name: PYTHONUNBUFFERED
       value: "1"
+    - name: FRONTEND_URL
+      value: "https://one-clickmaster.com"
+    - name: CORS_ORIGINS
+      value: "https://one-clickmaster.com"
+    - name: AWS_REGION
+      value: "us-east-1"
+    - name: S3_BUCKET_UPLOADS
+      value: "one-clickmaster.com-uploads"
+    - name: S3_BUCKET_OUTPUTS
+      value: "one-clickmaster.com-outputs"
