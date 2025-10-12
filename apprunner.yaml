@@ -4,12 +4,7 @@ runtime: python311
 build:
   commands:
     build:
-      - echo "Installing Python dependencies"
       - pip3 install -r backend/requirements.txt
-      - echo "Build completed"
-  env:
-    - name: PYTHONUNBUFFERED
-      value: "1"
 
 run:
   runtime-version: 3.11
@@ -20,15 +15,5 @@ run:
   network:
     port: 8000
   env:
-    - name: FRONTEND_URL
-      value: "https://one-clickmaster.com"
-    - name: CORS_ORIGINS
-      value: "https://one-clickmaster.com"
-    - name: AWS_REGION
-      value: "us-east-1"
-    - name: S3_BUCKET_UPLOADS
-      value: "one-clickmaster.com-uploads"
-    - name: S3_BUCKET_OUTPUTS
-      value: "one-clickmaster.com-outputs"
     - name: PYTHONUNBUFFERED
       value: "1"
