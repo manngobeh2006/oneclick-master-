@@ -4,11 +4,7 @@ runtime: python311
 build:
   commands:
     build:
-      - echo "Creating necessary directories"
-      - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
-  env:
-    - name: PYTHONUNBUFFERED
-      value: "1"
+      - echo "Build completed"
 
 run:
   runtime-version: 3.11
@@ -16,6 +12,7 @@ run:
     - apt-get update
     - apt-get install -y ffmpeg
     - pip3 install -r backend/requirements.txt
+    - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
   command: cd backend && python3 -m uvicorn app:app --host 0.0.0.0 --port 8000
   network:
     port: 8000
