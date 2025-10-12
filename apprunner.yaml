@@ -1,21 +1,29 @@
 version: 1.0
-runtime: python3
+runtime: python311
 
 build:
   commands:
     build:
-      - apt-get update && apt-get install -y ffmpeg
-      - pip install -r backend/requirements.txt
+      - set -e
+      - echo "Upgrading build tooling"
+      - python -m pip install --upgrade pip setuptools wheel
+      - echo "Installing Python dependencies"
+      - test -f backend/requirements.txt
+      - python -m pip install --no-cache-dir -r backend/requirements.txt
+      - echo "Creating necessary directories"
       - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
+  env:
+    - name: PYTHONUNBUFFERED
+      value: "1"
 
 run:
-  runtime-version: 3.8
+  runtime-version: 3.11
+  pre-run:
+    - dnf -y install ffmpeg || yum -y install ffmpeg || true
   command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
   network:
     port: 8000
   env:
-    - name: PYTHONUNBUFFERED
-      value: "1"
     - name: FRONTEND_URL
       value: "https://one-clickmaster.com"
     - name: CORS_ORIGINS
@@ -26,3 +34,5 @@ run:
       value: "one-clickmaster.com-uploads"
     - name: S3_BUCKET_OUTPUTS
       value: "one-clickmaster.com-outputs"
+    - name: PYTHONUNBUFFERED
+      value: "1"
