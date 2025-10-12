@@ -1,15 +1,9 @@
 version: 1.0
-runtime: python3
+runtime: python311
 
 build:
   commands:
     build:
-      - echo "Installing system dependencies"
-      - apt-get update
-      - apt-get install -y ffmpeg
-      - echo "Installing Python dependencies"
-      - pip install --upgrade pip
-      - pip install -r backend/requirements.txt
       - echo "Creating necessary directories"
       - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
   env:
@@ -18,7 +12,11 @@ build:
 
 run:
   runtime-version: 3.11
-  command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
+  pre-run:
+    - apt-get update
+    - apt-get install -y ffmpeg
+    - pip3 install -r backend/requirements.txt
+  command: cd backend && python3 -m uvicorn app:app --host 0.0.0.0 --port 8000
   network:
     port: 8000
   env:
