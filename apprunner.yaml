@@ -9,7 +9,7 @@ build:
       - python -m pip install --upgrade pip setuptools wheel
       - echo "Installing Python dependencies"
       - test -f backend/requirements.txt
-      - python -m pip install --no-cache-dir -r backend/requirements.txt
+      - python -m pip install --no-cache-dir --prefer-binary -r backend/requirements.txt
       - echo "Creating necessary directories"
       - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
   env:
@@ -17,12 +17,32 @@ build:
       value: "1"
 
 run:
-  runtime-version: 3.11
+  # Remove this (let App Runner manage patches), OR set a full patch like 3.11.13
+  # runtime-version: 3.11.13
+
   pre-run:
-    - dnf -y install ffmpeg || yum -y install ffmpeg || true
-  command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
+    # Always get a working ffmpeg (static build)
+    - dnf -y install curl tar xz || yum -y install curl tar xz
+    - curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o /tmp/ffmpeg.tar.xz
+    - mkdir -p /opt/ffmpeg
+    - tar -xJf /tmp/ffmpeg.tar.xz -C /opt/ffmpeg --strip-components=1
+    - ln -sf /opt/ffmpeg/ffmpeg /usr/local/bin/ffmpeg
+    - ln -sf /opt/ffmpeg/ffprobe /usr/local/bin/ffprobe
+    - ffmpeg -version
+
+  command: >
+    bash -lc '
+      set -e;
+      cd backend;
+      echo "PORT=${PORT:-8000}";
+      which uvicorn || { echo "uvicorn not found"; exit 1; }
+      which ffmpeg  || { echo "ffmpeg not found";  exit 1; }
+      uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}
+    '
+
   network:
     port: 8000
+
   env:
     - name: FRONTEND_URL
       value: "https://one-clickmaster.com"
@@ -36,3 +56,4 @@ run:
       value: "one-clickmaster.com-outputs"
     - name: PYTHONUNBUFFERED
       value: "1"
+
