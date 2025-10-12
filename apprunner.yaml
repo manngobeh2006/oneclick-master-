@@ -4,64 +4,9 @@ runtime: python311
 build:
   commands:
     build:
-      - set -Eeuo pipefail
-      - echo "=== PY ENV ==="; pwd; python -V; python -m pip -V
-      - echo "=== TREE (top) ==="; ls -la
-      - echo "=== TREE (backend) ==="; ls -la backend || true
-      - echo "=== FIRST 50 LINES requirements.txt ==="; sed -n '1,50p' backend/requirements.txt || true
-
-      - echo "=== Upgrade toolchain ==="
-      - python -m pip install --upgrade pip setuptools wheel
-
-      - echo "=== Prefer wheels (first attempt) ==="
-      - python -m pip install --no-cache-dir --prefer-binary -r backend/requirements.txt \
-        || ( echo "=== Wheel-only attempt failed; retrying without prefer-binary to show exact culprit ===" && \
-             python -m pip install --no-cache-dir -r backend/requirements.txt )
-
-      - echo "=== Create runtime data dirs ==="
-      - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
-  env:
-    - name: PYTHONUNBUFFERED
-      value: "1"
+      - python -V
 
 run:
-  # Pin a full patch; or remove this line to let App Runner manage patches
-  runtime-version: 3.11.13
-
-  # Guaranteed ffmpeg (static) so imports/processing don't crash at startup
-  pre-run:
-    - dnf -y install curl tar xz || yum -y install curl tar xz
-    - curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o /tmp/ffmpeg.tar.xz
-    - mkdir -p /opt/ffmpeg
-    - tar -xJf /tmp/ffmpeg.tar.xz -C /opt/ffmpeg --strip-components=1
-    - ln -sf /opt/ffmpeg/ffmpeg  /usr/local/bin/ffmpeg
-    - ln -sf /opt/ffmpeg/ffprobe /usr/local/bin/ffprobe
-    - ffmpeg -version
-
-  command: >
-    bash -lc '
-      set -e;
-      cd backend;
-      echo "=== START === PORT=${PORT:-8000}";
-      which uvicorn || { echo "uvicorn not found"; exit 1; }
-      which ffmpeg  || { echo "ffmpeg not found";  exit 1; }
-      python -c "import importlib; importlib.import_module(\"fastapi\"); importlib.import_module(\"uvicorn\"); print(\"FastAPI & Uvicorn OK\")";
-      uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}
-    '
-
+  command: python -c "import time; print('healthy'); time.sleep(3600)"
   network:
     port: 8000
-
-  env:
-    - name: FRONTEND_URL
-      value: "https://one-clickmaster.com"
-    - name: CORS_ORIGINS
-      value: "https://one-clickmaster.com"
-    - name: AWS_REGION
-      value: "us-east-1"
-    - name: S3_BUCKET_UPLOADS
-      value: "one-clickmaster.com-uploads"
-    - name: S3_BUCKET_OUTPUTS
-      value: "one-clickmaster.com-outputs"
-    - name: PYTHONUNBUFFERED
-      value: "1"
