@@ -8,14 +8,20 @@ build:
       - "echo === PY ENV ===; pwd; python -V; python -m pip -V"
       - "echo === TREE (top) ===; ls -la"
       - "echo === TREE (backend) ===; ls -la backend || true"
-      - "echo === HEAD requirements.txt ===; sed -n '1,120p' backend/requirements.txt || true"
+      - "echo === SHOW requirements.txt (first 200 lines) ===; sed -n '1,200p' backend/requirements.txt || true"
+
+      - "echo === Upgrade toolchain ==="
       - "python -m pip install --upgrade pip setuptools wheel"
-      - "echo === Install requirements (wheels) ==="
-      - "PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 python -m pip install --no-cache-dir --only-binary=:all: -r backend/requirements.txt"
-      - "echo === Fallback install (to print exact error if wheels missing) ==="
-      - "PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 python -m pip install --no-cache-dir -r backend/requirements.txt || true"
+
+      # Single, loud install. No fallbacks, no '|| true'. If it fails, we see the real error.
+      - "echo === Installing requirements (verbose) ==="
+      - "PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 python -m pip install -v --no-cache-dir --prefer-binary -r backend/requirements.txt"
+
+      - "echo === Create data dirs ==="
       - "mkdir -p backend/data/uploads backend/data/previews backend/data/outputs"
+
       - "echo === BUILD COMPLETE ==="
+
   env:
     - name: PYTHONUNBUFFERED
       value: "1"
