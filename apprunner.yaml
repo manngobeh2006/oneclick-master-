@@ -4,22 +4,21 @@ runtime: python311
 build:
   commands:
     build:
-      - set -Eeuo pipefail
-      - STEP="env"; trap 'echo "::BUILD FAILED at ${STEP}::" >&2' ERR
-      - echo "=== PY ENV ==="; pwd; python -V; python -m pip -V
-      - echo "=== TREE (top) ==="; ls -la
-      - echo "=== TREE (backend) ==="; ls -la backend || true
-      - echo "=== HEAD requirements.txt ==="; sed -n '1,120p' backend/requirements.txt || true
-      - STEP="tooling"
-      - python -m pip install --upgrade pip setuptools wheel
-      - STEP="requirements-wheels"
-      - PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 python -m pip install --no-cache-dir --only-binary=:all: -r backend/requirements.txt
-      - STEP="requirements-fallback" || true
-      - PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 python -m pip install --no-cache-dir -r backend/requirements.txt || true
-      - STEP="mkdirs"
-      - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
-      - STEP="done"
-      - echo "=== BUILD COMPLETE ==="
+      - "set -Eeuo pipefail"
+      - "echo === PY ENV ===; pwd; python -V; python -m pip -V"
+      - "echo === TREE (top) ===; ls -la"
+      - "echo === TREE (backend) ===; ls -la backend || true"
+      - "echo === HEAD requirements.txt ===; sed -n '1,120p' backend/requirements.txt || true"
+      - "python -m pip install --upgrade pip setuptools wheel"
+      - "echo === Install requirements (wheels) ==="
+      - "PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 python -m pip install --no-cache-dir --only-binary=:all: -r backend/requirements.txt"
+      - "echo === Fallback install (to print exact error if wheels missing) ==="
+      - "PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 python -m pip install --no-cache-dir -r backend/requirements.txt || true"
+      - "mkdir -p backend/data/uploads backend/data/previews backend/data/outputs"
+      - "echo === BUILD COMPLETE ==="
+  env:
+    - name: PYTHONUNBUFFERED
+      value: "1"
 
 
 run:
