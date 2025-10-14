@@ -1,0 +1,20 @@
+.git
+**/__pycache__/
+*.pyc
+.DS_Store
+
+# big folders we don’t need in the image build context
+frontend/node_modules
+node_modules
+backend/data
+backend/data/uploads
+backend/data/previews
+backend/data/outputs
+*.wav
+*.mp3
+*.flac
+*.aiff
+*.zip
+dist
+build
+

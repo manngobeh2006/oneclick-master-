@@ -106,6 +106,24 @@ def make_master(input_path: Path, out_path: Path) -> None:
 
 
 # ----------- Endpoints -----------
+@app.get("/")
+def root():
+    return {
+        "message": "OneClick Master Audio Processing API",
+        "version": "1.0.0",
+        "dev_mode": DEV_MODE,
+        "endpoints": {
+            "health": "/health",
+            "ffmpeg_test": "/ffmpeg-test", 
+            "preview": "POST /preview",
+            "checkout": "POST /checkout",
+            "checkout_subscription": "POST /checkout-subscription",
+            "process_full": "POST /process-full",
+            "files": "/files/{type}/{filename}"
+        },
+        "docs": "/docs"
+    }
+
 @app.get("/health")
 def health():
     return {"ok": True, "dev_mode": DEV_MODE}
