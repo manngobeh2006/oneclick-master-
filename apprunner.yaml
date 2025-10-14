@@ -4,35 +4,32 @@ runtime: python311
 build:
   commands:
     build:
-      - set -e
-      - echo "Upgrading build tooling"
-      - python -m pip install --upgrade pip setuptools wheel
-      - echo "Installing Python dependencies"
-      - test -f backend/requirements.txt
-      - python -m pip install --no-cache-dir -r backend/requirements.txt
-      - echo "Creating necessary directories"
-      - mkdir -p backend/data/uploads backend/data/previews backend/data/outputs
+      - "set -Eeuo pipefail"
+      - "echo === PY ENV ===; pwd; python -V; python -m pip -V"
+      - "echo === TREE (top) ===; ls -la"
+      - "echo === TREE (backend) ===; ls -la backend || true"
+      - "echo === SHOW requirements.txt (first 200 lines) ===; sed -n '1,200p' backend/requirements.txt || true"
+
+      - "echo === Upgrade toolchain ==="
+      - "python -m pip install --upgrade pip setuptools wheel"
+
+      # Single, loud install. No fallbacks, no '|| true'. If it fails, we see the real error.
+      - "echo === Installing requirements (verbose) ==="
+      - "PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 python -m pip install -v --no-cache-dir --prefer-binary -r backend/requirements.txt"
+
+      - "echo === Create data dirs ==="
+      - "mkdir -p backend/data/uploads backend/data/previews backend/data/outputs"
+
+      - "echo === BUILD COMPLETE ==="
+
   env:
     - name: PYTHONUNBUFFERED
       value: "1"
 
+
 run:
-  runtime-version: 3.11
-  pre-run:
-    - dnf -y install ffmpeg || yum -y install ffmpeg || true
-  command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
+  runtime-version: "3.11.13"
+  command: python -c "import time; print('OK'); time.sleep(3600)"
   network:
     port: 8000
-  env:
-    - name: FRONTEND_URL
-      value: "https://one-clickmaster.com"
-    - name: CORS_ORIGINS
-      value: "https://one-clickmaster.com"
-    - name: AWS_REGION
-      value: "us-east-1"
-    - name: S3_BUCKET_UPLOADS
-      value: "one-clickmaster.com-uploads"
-    - name: S3_BUCKET_OUTPUTS
-      value: "one-clickmaster.com-outputs"
-    - name: PYTHONUNBUFFERED
-      value: "1"
+
