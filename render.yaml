@@ -24,6 +24,8 @@ services:
       apt-get install -y ffmpeg
       cd backend
       pip install -r requirements.txt
+      echo "🧠 Initializing AI Mastering System..."
+      python initialize_production_ai.py
     startCommand: cd backend && uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION

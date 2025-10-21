@@ -19,6 +19,9 @@ build:
 
       - "echo === Create data dirs ==="
       - "mkdir -p backend/data/uploads backend/data/previews backend/data/outputs"
+      
+      - "echo === Initialize AI Mastering System ==="
+      - "cd backend && python initialize_production_ai.py"
 
       - "echo === BUILD COMPLETE ==="
 
@@ -29,7 +32,10 @@ build:
 
 run:
   runtime-version: "3.11.13"
-  command: python -c "import time; print('OK'); time.sleep(3600)"
+  command: cd backend && uvicorn app:app --host 0.0.0.0 --port 8000
   network:
     port: 8000
+  env:
+    - name: PYTHONUNBUFFERED
+      value: "1"
 
