@@ -32,8 +32,8 @@ def master_audio_powerful(input_path: str, output_path: str, target_lufs: float 
             # 1. Clean up subsonic rumble
             "highpass=f=25",
             
-            # 2. Gentle saturation for warmth and glue
-            "aexciter=amount=0.15:harmonics=10:scope=0",
+            # 2. Gentle saturation for warmth and glue (simplified)
+            "aexciter=amount=0.15",
             
             # 3. POWERFUL EQ - Shape the sound
             "equalizer=f=60:width_type=h:width=0.8:g=2.0",      # Sub bass punch
@@ -44,37 +44,14 @@ def master_audio_powerful(input_path: str, output_path: str, target_lufs: float 
             "equalizer=f=6000:width_type=h:width=0.7:g=1.5",     # Presence boost
             "equalizer=f=10000:width_type=h:width=0.8:g=1.2",    # Air/sparkle
             
-            # 4. AGGRESSIVE MULTIBAND COMPRESSION - Make it LOUD
-            # Split into 3 bands
-            "asplit=3[low][mid][high]",
+            # 4. POWERFUL COMPRESSION - Single-stage aggressive
+            "acompressor=threshold=-20dB:ratio=6.0:attack=5:release=50:makeup=8",
             
-            # Low band (below 250Hz) - Tight and punchy
-            "[low]lowpass=f=250,acompressor="
-            "threshold=-18dB:ratio=4.0:attack=15:release=100:makeup=4[low_out]",
+            # 5. LOUDNESS NORMALIZATION - This makes it LOUD
+            f"loudnorm=I={target_lufs}:TP=-1.0:LRA=7",
             
-            # Mid band (250Hz-3kHz) - Controlled and powerful
-            "[mid]bandpass=f=250:width=f:width=3000,acompressor="
-            "threshold=-16dB:ratio=5.0:attack=5:release=50:makeup=5[mid_out]",
-            
-            # High band (above 3kHz) - Bright and clear
-            "[high]highpass=f=3000,acompressor="
-            "threshold=-14dB:ratio=4.5:attack=2:release=30:makeup=4[high_out]",
-            
-            # Mix bands back together
-            "[low_out][mid_out][high_out]amix=inputs=3:weights=1 1 1[mb_out]",
-            
-            # 5. Final bus compression - Glue it together
-            "[mb_out]acompressor="
-            "threshold=-10dB:ratio=3.0:attack=3:release=40:makeup=2",
-            
-            # 6. Stereo enhancement
-            "extrastereo=m=0.15:c=0",
-            
-            # 7. LOUDNESS NORMALIZATION - This makes it LOUD
-            f"loudnorm=I={target_lufs}:TP=-1.0:LRA=7:dual_mono=true:linear=true",
-            
-            # 8. Final brick-wall limiter - Maximum loudness
-            "alimiter=level_in=1:level_out=1:limit=-0.2:attack=1:release=25"
+            # 6. Final brick-wall limiter - Maximum loudness  
+            "alimiter=limit=0.95:attack=1:release=25"
         ])
         
         # Run FFmpeg with powerful processing
