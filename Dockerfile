@@ -18,6 +18,10 @@ COPY backend/ .
 # Create directories for file storage
 RUN mkdir -p data/uploads data/previews data/outputs
 
+# Initialize AI mastering system
+RUN echo "🧠 Initializing AI Mastering System..." && \
+    python initialize_production_ai.py || echo "⚠️  AI init failed, will retry on startup"
+
 # Expose port
 EXPOSE 8000
 
